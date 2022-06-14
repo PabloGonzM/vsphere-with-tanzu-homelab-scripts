@@ -37,11 +37,6 @@ iptables -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j ACCE
 iptables -A FORWARD -i eth0 -o eth2 -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
 iptables -A FORWARD -i eth2 -o eth0 -j ACCEPT
-if [ ${SETUP_DNS_SERVER} -eq 1 ]; then
-    iptables -A INPUT -i eth0 -p udp --dport 53 -j ACCEPT
-    iptables -A INPUT -i eth1 -p udp --dport 53 -j ACCEPT
-    iptables -A INPUT -i eth2 -p udp --dport 53 -j ACCEPT
-fi
 iptables-save > /etc/systemd/scripts/ip4save
 
 systemctl restart iptables
