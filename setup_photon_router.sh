@@ -1,62 +1,10 @@
 #!/bin/bash
 
-PHOTON_ROUTER_IP=192.168.30.2
-PHOTON_ROUTER_GW=192.168.30.1
-PHOTON_ROUTER_DNS=192.168.30.1
-SETUP_DNS_SERVER=1
-
-tdnf -y update
-if [ ${SETUP_DNS_SERVER} -eq 1 ]; then
-    tdnf install -y unbound bindutils
-
-    cat > /etc/unbound/unbound.conf << EOF
-    server:
-        interface: 0.0.0.0
-        port: 53
-        do-ip4: yes
-        do-udp: yes
-        access-control: 192.168.30.0/24 allow
-        access-control: 10.10.0.0/24 allow
-        access-control: 10.20.0.0/24 allow
-        verbosity: 1
-
-    local-zone: "tanzu.local." static
-
-    local-data: "router.tanzu.local A 192.168.30.2"
-    local-data-ptr: "192.168.30.2 router.tanzu.local"
-
-    local-data: "vcsa.tanzu.local A 192.168.30.5"
-    local-data-ptr: "192.168.30.5 vcsa.tanzu.local"
-
-    local-data: "haproxy.tanzu.local A 192.168.30.6"
-    local-data-ptr: "192.168.30.6 haproxy.tanzu.local"
-
-    local-data: "esxi-01.tanzu.local A 192.168.30.227"
-    local-data-ptr: "192.168.30.227 esxi-01.tanzu.local"
-
-    forward-zone:
-        name: "."
-        forward-addr: ${PHOTON_ROUTER_DNS}
-EOF
-    systemctl enable unbound
-    systemctl start unbound
-fi
 
 sed -i 's/net.ipv4.ip_forward.*/net.ipv4.ip_forward=1/g' /etc/sysctl.d/50-security-hardening.conf
 sysctl -w net.ipv4.ip_forward=1
 
 rm -f /etc/systemd/network/99-dhcp-en.network
-
-cat > /etc/systemd/network/10-static-eth0.network << EOF
-[Match]
-Name=eth0
-
-[Network]
-Address=${PHOTON_ROUTER_IP}/24
-Gateway=${PHOTON_ROUTER_GW}
-DNS=${PHOTON_ROUTER_DNS}
-IPv6AcceptRA=no
-EOF
 
 cat > /etc/systemd/network/11-static-eth1.network << EOF
 [Match]
